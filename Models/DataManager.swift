@@ -215,16 +215,34 @@ class DataManager: ObservableObject {
     func getWeeklyData(weeks: Int = 4) -> [(weekStart: Date, items: [ConsumptionItem])] {
         var result: [(weekStart: Date, items: [ConsumptionItem])] = []
         let today = Date()
+        let startOfToday = calendar.startOfDay(for: today)
         
+        // Calculate the number of days to go back based on the selected time range
+        let daysToGoBack: Int
+        switch weeks {
+        case 1: // Week
+            daysToGoBack = 7
+        case 4: // Month
+            daysToGoBack = 30
+        case 12: // 3 Months
+            daysToGoBack = 90
+        default:
+            daysToGoBack = 7 * weeks
+        }
+        
+        // Calculate the start date (going back the appropriate number of days)
+        let startDate = calendar.date(byAdding: .day, value: -daysToGoBack + 1, to: startOfToday)!
+        
+        // Group the data by week
         for i in 0..<weeks {
-            let currentWeekStart = calendar.date(byAdding: .day, value: -7 * i, to: calendar.startOfDay(for: today))!
+            let currentWeekStart = calendar.date(byAdding: .day, value: 7 * i, to: startDate)!
             let currentWeekEnd = calendar.date(byAdding: .day, value: 7, to: currentWeekStart)!
             
             let items = getConsumptionHistory(startDate: currentWeekStart, endDate: currentWeekEnd)
             result.append((weekStart: currentWeekStart, items: items))
         }
         
-        return result
+        return result.reversed() // Return in reverse order so most recent week is first
     }
     
     var isOverCalorieTarget: Bool {
@@ -379,9 +397,6 @@ class DataManager: ObservableObject {
     }
     
     private func setupMidnightReset() {
-        // Schedule a local notification for midnight reset
-        let midnight = calendar.startOfDay(for: Date().addingTimeInterval(86400))
-        
         // Use NotificationCenter for app state changes
         NotificationCenter.default.addObserver(
             self,
@@ -390,24 +405,48 @@ class DataManager: ObservableObject {
             object: nil
         )
         
-        // Schedule background task if app supports it
-        if #available(iOS 13.0, *) {
-            Task {
-                try? await Task.sleep(until: midnight, clock: .continuous)
-                self.resetDaily()
-            }
+        // Schedule a timer for midnight reset
+        scheduleResetTimer()
+    }
+    
+    private func scheduleResetTimer() {
+        // Calculate time until next midnight
+        let now = Date()
+        let calendar = Calendar.current
+        let tomorrow = calendar.startOfDay(for: now.addingTimeInterval(86400))
+        let timeInterval = tomorrow.timeIntervalSince(now)
+        
+        // Schedule a timer to reset at midnight
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
+            guard let self = self else { return }
+            
+            // Reset the daily values
+            self.resetDaily()
+            
+            // Schedule the next day's timer
+            self.scheduleResetTimer()
         }
+        
+        // Also save the next reset time to UserDefaults
+        UserDefaults.standard.set(tomorrow, forKey: "NextResetTime")
     }
     
     @objc private func appDidBecomeActive() {
         // Check if we need to reset data when app becomes active
-        let currentDay = calendar.startOfDay(for: Date())
-        if let lastActiveDay = UserDefaults.standard.object(forKey: "LastActiveDay") as? Date,
-           !calendar.isDate(lastActiveDay, inSameDayAs: currentDay) {
+        let now = Date()
+        let currentDay = calendar.startOfDay(for: now)
+        
+        // Check if we missed a reset while the app was inactive
+        if let nextResetTime = UserDefaults.standard.object(forKey: "NextResetTime") as? Date,
+           nextResetTime < now {
+            resetDaily()
+            scheduleResetTimer() // Reschedule the timer
+        } else if let lastActiveDay = UserDefaults.standard.object(forKey: "LastActiveDay") as? Date,
+                  !calendar.isDate(lastActiveDay, inSameDayAs: currentDay) {
             resetDaily()
         }
         
-        UserDefaults.standard.set(Date(), forKey: "LastActiveDay")
+        UserDefaults.standard.set(now, forKey: "LastActiveDay")
         loadTodayData()
     }
     

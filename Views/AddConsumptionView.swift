@@ -60,23 +60,25 @@ struct AddConsumptionView: View {
             }
             
             Section(header: Text("Amount")) {
-                if let category = selectedCategory, category.name.lowercased() != "drink" {
-                    HStack {
-                        Image(systemName: "flame.fill")
-                            .foregroundColor(.orange)
-                        TextField("Calories", text: $calories)
-                            .keyboardType(.numberPad)
-                        Text("cal")
-                            .foregroundColor(.secondary)
-                    }
-                } else if selectedCategory != nil {
-                    HStack {
-                        Image(systemName: "drop.fill")
-                            .foregroundColor(.blue)
-                        TextField("Water Amount", text: $waterAmount)
-                            .keyboardType(.decimalPad)
-                        Text("L")
-                            .foregroundColor(.secondary)
+                if let category = selectedCategory {
+                    if category.name.lowercased() == "drink" {
+                        HStack {
+                            Image(systemName: "drop.fill")
+                                .foregroundColor(.blue)
+                            TextField("Water Amount", text: $waterAmount)
+                                .keyboardType(.decimalPad)
+                            Text("L")
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        HStack {
+                            Image(systemName: "flame.fill")
+                                .foregroundColor(.orange)
+                            TextField("Calories", text: $calories)
+                                .keyboardType(.numberPad)
+                            Text("cal")
+                                .foregroundColor(.secondary)
+                        }
                     }
                 } else {
                     Text("Select a category first")
@@ -172,6 +174,22 @@ struct AddConsumptionView: View {
         guard let category = selectedCategory else { return }
         
         let isDrink = category.name.lowercased() == "drink"
+        
+        // Validate input before proceeding
+        if isDrink {
+            guard let waterValue = Double(waterAmount), waterValue > 0 else {
+                alertType = .invalid
+                showingAlert = true
+                return
+            }
+        } else {
+            guard let calorieValue = Int(calories), calorieValue > 0 else {
+                alertType = .invalid
+                showingAlert = true
+                return
+            }
+        }
+        
         let newCalories = isDrink ? 0 : (Int(calories) ?? 0)
         let newWater = isDrink ? (Double(waterAmount) ?? 0) : nil
         
@@ -183,11 +201,14 @@ struct AddConsumptionView: View {
         switch intakeStatus {
         case .dangerous:
             alertType = .tooHigh
+            showingAlert = true
             return
         case .excessive:
             alertType = .overTarget
+            showingAlert = true
         case .targetReached:
             alertType = .success
+            showingAlert = true
         case .normal:
             break
         }

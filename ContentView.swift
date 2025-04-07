@@ -45,9 +45,11 @@ struct ContentView: View {
             if dataManager.modelContext == nil {
                 Task {
                     try? await Task.sleep(for: .seconds(0.5))
-                    if let container = ModelContainer.shared {
+                    // Get the ModelContainer from the environment instead of using a shared instance
+                    let modelContext = ModelContext.autoupdatingCurrent
+                    if let container = modelContext.container {
                         dataManager.modelContainer = container
-                        dataManager.modelContext = ModelContext(container)
+                        dataManager.modelContext = modelContext
                     }
                 }
             }

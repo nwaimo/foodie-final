@@ -152,11 +152,11 @@ struct HistoryView: View {
         
         switch selectedTimeRange {
         case .week:
-            startDate = calendar.date(byAdding: .day, value: -7, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: endDate))!
         case .month:
-            startDate = calendar.date(byAdding: .day, value: -30, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: endDate))!
         case .threeMonths:
-            startDate = calendar.date(byAdding: .day, value: -90, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -89, to: calendar.startOfDay(for: endDate))!
         }
         
         // Create a date for each day in the range
@@ -167,6 +167,7 @@ struct HistoryView: View {
             }
             
             let totalCalories = dayItems.reduce(0) { total, item in
+                // Only count food items (where waterAmount is nil)
                 total + (item.waterAmount == nil ? item.calories : 0)
             }
             
@@ -187,11 +188,11 @@ struct HistoryView: View {
         
         switch selectedTimeRange {
         case .week:
-            startDate = calendar.date(byAdding: .day, value: -7, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: endDate))!
         case .month:
-            startDate = calendar.date(byAdding: .day, value: -30, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: endDate))!
         case .threeMonths:
-            startDate = calendar.date(byAdding: .day, value: -90, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -89, to: calendar.startOfDay(for: endDate))!
         }
         
         // Create a date for each day in the range
@@ -202,6 +203,7 @@ struct HistoryView: View {
             }
             
             let totalWater = dayItems.reduce(0.0) { total, item in
+                // Only count water items (where waterAmount is not nil)
                 total + (item.waterAmount ?? 0.0)
             }
             
