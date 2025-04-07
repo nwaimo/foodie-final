@@ -100,14 +100,17 @@ class DataManager: ObservableObject {
         
         // Check if category with this name already exists
         do {
-            let descriptor = FetchDescriptor<MealCategory>(
-                predicate: #Predicate<MealCategory> { category in
-                    category.name.lowercased() == name.lowercased()
-                }
-            )
+            // Fetch all categories and filter in memory
+            let descriptor = FetchDescriptor<MealCategory>()
+            let allCategories = try context.fetch(descriptor)
             
-            let existingCategories = try context.fetch(descriptor)
-            if !existingCategories.isEmpty {
+            // Check if a category with the same name (case-insensitive) already exists
+            let nameToCheck = name.lowercased()
+            let categoryExists = allCategories.contains { category in
+                category.name.lowercased() == nameToCheck
+            }
+            
+            if categoryExists {
                 return nil // Category already exists
             }
             
