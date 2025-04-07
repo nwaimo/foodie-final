@@ -4,6 +4,7 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject private var dataManager: DataManager
     @EnvironmentObject private var notificationManager: NotificationManager
+    @Environment(\.modelContext) private var modelContext
     
     var body: some View {
         TabView {
@@ -45,8 +46,7 @@ struct ContentView: View {
             if dataManager.modelContext == nil {
                 Task {
                     try? await Task.sleep(for: .seconds(0.5))
-                    // Get the ModelContainer from the environment instead of using a shared instance
-                    let modelContext = ModelContext.autoupdatingCurrent
+                    // Use the modelContext from the environment
                     if let container = modelContext.container {
                         dataManager.modelContainer = container
                         dataManager.modelContext = modelContext
