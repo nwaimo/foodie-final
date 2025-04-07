@@ -47,10 +47,9 @@ struct ContentView: View {
                 Task {
                     try? await Task.sleep(for: .seconds(0.5))
                     // Use the modelContext from the environment
-                    if let container = modelContext.container {
-                        dataManager.modelContainer = container
-                        dataManager.modelContext = modelContext
-                    }
+                    // The container property is not optional, so we don't need to unwrap it
+                    dataManager.modelContainer = modelContext.container
+                    dataManager.modelContext = modelContext
                 }
             }
         }
